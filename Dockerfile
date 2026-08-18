@@ -1,3 +1,12 @@
+# --- Stage 1: build frontend assets (Vite) ---
+FROM node:20-alpine AS assets
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# --- Stage 2: PHP app ---
 FROM php:8.2-fpm
 
 # Cài đặt các thư viện hệ thống và PHP extension cần thiết
@@ -21,6 +30,9 @@ WORKDIR /var/www
 COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
+
+# Lấy frontend đã build từ stage 1
+COPY --from=assets /app/public/build /var/www/public/build
 
 # Cấp quyền cho thư mục storage và cache
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
