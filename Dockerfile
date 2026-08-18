@@ -34,6 +34,9 @@ RUN composer install --no-dev --optimize-autoloader
 # Lấy frontend đã build từ stage 1
 COPY --from=assets /app/public/build /var/www/public/build
 
+# Tạo symlink public/storage -> storage/app/public (bị .gitignore nên không có sẵn trong repo)
+RUN php artisan storage:link
+
 # Cấp quyền cho thư mục storage và cache
 RUN chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
 
