@@ -79,7 +79,7 @@
                         </label>
                         <label class="flex items-center gap-2">
                             <input type="radio" name="payment_method" value="sepay" class="text-ink focus:ring-ink">
-                            SePay
+                            Chuyển khoản QR (SePay)
                         </label>
                     </div>
                 </div>

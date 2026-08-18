@@ -28,6 +28,25 @@ class SepayService
     }
 
     /**
+     * BỔ SUNG: Phương thức buildCheckoutForm() để sửa lỗi cho PaymentGatewayController
+     */
+    public function buildCheckoutForm(Order $order): array
+    {
+        $config = config('payment.sepay');
+
+        return [
+            'action_url'      => $this->qrImageUrl($order), // Bổ sung key này để Blade không bị lỗi
+            'qr_url'          => $this->qrImageUrl($order),
+            'bank_code'       => $config['bank_code'] ?? '',
+            'account_number'  => $config['account_number'] ?? '',
+            'account_name'    => $config['account_name'] ?? '',
+            'amount'          => (int) round((float) $order->total),
+            'transfer_content' => $this->transferContent($order),
+            'order'           => $order,
+        ];
+    }
+
+    /**
      * Build a VietQR image URL pre-filled with the order's amount and a
      * transfer note containing the order code, so SePay's webhook can match
      * the incoming transfer back to this order.
@@ -37,23 +56,23 @@ class SepayService
         $config = config('payment.sepay');
 
         $params = [
-            'bank' => $config['bank_code'],
-            'acc' => $config['account_number'],
+            'bank'     => $config['bank_code'],
+            'acc'      => $config['account_number'],
             'template' => $config['qr_template'],
-            'amount' => (int) round((float) $order->total),
-            'des' => $this->transferContent($order),
+            'amount'   => (int) round((float) $order->total),
+            'des'      => $this->transferContent($order),
         ];
 
-        if ($config['account_name']) {
+        if (!empty($config['account_name'])) {
             $params['accName'] = $config['account_name'];
         }
 
-        return 'https://qr.sepay.vn/img?'.http_build_query($params);
+        return 'https://qr.sepay.vn/img?' . http_build_query($params);
     }
 
     public function transferContent(Order $order): string
     {
-        return 'DH '.$order->code;
+        return 'DH ' . $order->code;
     }
 
     public function verifyToken(?string $authorizationHeader): bool
@@ -64,19 +83,12 @@ class SepayService
             return false;
         }
 
-        return hash_equals('Apikey '.$expected, (string) $authorizationHeader)
+        return hash_equals('Apikey ' . $expected, (string) $authorizationHeader)
             || hash_equals($expected, (string) $authorizationHeader);
     }
 
     /**
      * Match an incoming webhook payload back to one of our orders.
-     *
-     * Prefers SePay's own `code` field — auto-extracted by SePay from the
-     * transfer content server-side according to the "payment code prefix"
-     * configured in its dashboard, and far more reliable than us re-parsing
-     * `content`/`description` ourselves (some banks mangle punctuation/case
-     * in the free-text content). Falls back to regex-matching the raw
-     * content in case the prefix filter isn't configured on SePay's side.
      */
     public function findOrderFromPayload(array $payload): ?Order
     {
@@ -89,7 +101,7 @@ class SepayService
             }
         }
 
-        $content = ($payload['content'] ?? '').' '.($payload['description'] ?? '');
+        $content = ($payload['content'] ?? '') . ' ' . ($payload['description'] ?? '');
 
         return $this->findOrderFromContent($content);
     }

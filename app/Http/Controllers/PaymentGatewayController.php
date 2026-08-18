@@ -47,13 +47,13 @@ class PaymentGatewayController extends Controller
         }
 
         $demo = (bool) config("payment.{$method}.demo", true);
-        $sepayCheckout = null;
+        $sepayQrUrl = null;
 
         if ($method === 'sepay' && ! $demo) {
-            $sepayCheckout = app(SepayService::class)->buildCheckoutForm($order);
+            $sepayQrUrl = app(SepayService::class)->qrImageUrl($order);
         }
 
-        return view('checkout.gateway', compact('order', 'payment', 'method', 'demo', 'sepayCheckout'));
+        return view('checkout.gateway', compact('order', 'payment', 'method', 'demo', 'sepayQrUrl'));
     }
 
     public function redirectVnpay(Order $order, Request $request, VnpayService $vnpay)
